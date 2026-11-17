@@ -1,0 +1,7 @@
+record_id,reference,currency,amount_minor
+l1,payment-100,USD,12000
+l2,payment-101,USD,5000
+l3,refund-100,USD,-2000
+l4,payment-102,EUR,3000
+l5,payment-103,USD,8000
+l5,payment-103,USD,8000

@@ -1,0 +1,63 @@
+{
+  "adapter": "synthetic-provider-v1",
+  "comparison_basis": "gross",
+  "source_sha256": "bb0816dcb1b9caf43a968c34548c53da8ced4bbfc9698ff9f7b94723d37f2341",
+  "exact_duplicates_ignored": 1,
+  "unique_events": 4,
+  "totals_by_currency": {
+    "EUR": {
+      "gross_minor": 3000,
+      "fee_minor": 50,
+      "net_minor": 2950
+    },
+    "USD": {
+      "gross_minor": 7000,
+      "fee_minor": 275,
+      "net_minor": 6725
+    }
+  },
+  "events": [
+    {
+      "event_id": "evt1",
+      "reference": "payment-200",
+      "kind": "payment",
+      "parent_reference": "",
+      "currency": "USD",
+      "gross_minor": 10000,
+      "fee_minor": 250,
+      "net_minor": 9750
+    },
+    {
+      "event_id": "evt2",
+      "reference": "refund-200-1",
+      "kind": "refund",
+      "parent_reference": "payment-200",
+      "currency": "USD",
+      "gross_minor": -2000,
+      "fee_minor": 0,
+      "net_minor": -2000
+    },
+    {
+      "event_id": "evt3",
+      "reference": "refund-200-2",
+      "kind": "refund",
+      "parent_reference": "payment-200",
+      "currency": "USD",
+      "gross_minor": -1000,
+      "fee_minor": 25,
+      "net_minor": -1025
+    },
+    {
+      "event_id": "evt4",
+      "reference": "payment-201",
+      "kind": "payment",
+      "parent_reference": "",
+      "currency": "EUR",
+      "gross_minor": 3000,
+      "fee_minor": 50,
+      "net_minor": 2950
+    }
+  ],
+  "refund_parent_scope": "Reference retained; parent existence, currency, and refund limits not validated",
+  "normalized_sha256": "f9769cad2bec5b48111079a84a4e5a34c38ba563a4c109af2a7b7eb42ec6f5a2"
+}

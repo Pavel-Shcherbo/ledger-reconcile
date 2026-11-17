@@ -1,0 +1,6 @@
+event_id,reference,kind,parent_reference,currency,gross_minor,fee_minor,net_minor
+evt1,payment-200,payment,,USD,10000,250,9750
+evt2,refund-200-1,refund,payment-200,USD,-2000,0,-2000
+evt3,refund-200-2,refund,payment-200,USD,-1000,25,-1025
+evt4,payment-201,payment,,EUR,3000,50,2950
+evt1,payment-200,payment,,USD,10000,250,9750

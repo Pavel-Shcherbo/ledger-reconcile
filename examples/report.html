@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ledger Reconcile — exception report</title>
+<style>
+:root {font-family:system-ui,sans-serif;color:#172b36;background:#f3f5f4}
+body {max-width:1440px;margin:auto;padding:32px} h1 {margin-bottom:8px}
+.note {max-width:90ch;color:#44565f}
+label {display:inline-block;margin:12px 20px 12px 0}
+input,select {font:inherit;padding:8px;border:1px solid #768a91;border-radius:4px}
+.scroll {overflow:auto;background:white;border:1px solid #b6c3c5}
+table {border-collapse:collapse;width:100%;text-align:left}
+th,td {padding:12px;vertical-align:top;border-bottom:1px solid #dce3e4}
+thead {background:#dfe9e8} tbody th {min-width:150px;overflow-wrap:anywhere}
+tr[data-status="amount_mismatch"],tr[data-status="ambiguous"] {background:#fff4dd}
+ul {margin:0;padding-left:20px} dd {overflow-wrap:anywhere;margin-bottom:12px}
+[hidden] {display:none!important} #empty {padding:16px;background:#fff4dd}
+@media print {label {display:none} body {padding:0}.scroll {overflow:visible}}
+</style></head><body><header><p>LOCAL RECONCILIATION / SCHEMA 1</p>
+<h1>Payment exception report</h1>
+<p class="note">Exact reference and currency matching. Signed amounts are shown in
+minor units, without currency conversion. A zero total delta does not prove that
+individual payments match. This report describes only the supplied exports;
+it does not establish settlement finality or completeness.</p></header>
+<section aria-label="Filters"><label>Status <select id="status"><option value="all">All statuses</option><option value="matched">matched (2)</option><option value="amount_mismatch">amount mismatch (1)</option><option value="left_only">left only (1)</option><option value="right_only">right only (1)</option><option value="ambiguous">ambiguous (1)</option></select></label>
+<label>Reference, currency or record ID <input id="query" type="search"></label>
+<p id="count" role="status" aria-live="polite"></p></section>
+<div class="scroll"><table><caption>All values are signed integer minor units</caption>
+<thead><tr><th scope="col">Reference</th><th scope="col">Currency</th>
+<th scope="col">Status</th><th scope="col">Left records</th>
+<th scope="col">Right records</th><th scope="col">Left − right</th>
+<th scope="col">Explanation</th></tr></thead><tbody><tr data-status="matched"><th scope="row">payment-100</th><td>USD</td><td>matched</td><td><ul><li><code>l1</code>: 12000</li></ul></td><td><ul><li><code>p1</code>: 12000</li></ul></td><td>0</td><td>One record on each side, with equal signed amounts.</td></tr><tr data-status="amount_mismatch"><th scope="row">payment-101</th><td>USD</td><td>amount mismatch</td><td><ul><li><code>l2</code>: 5000</li></ul></td><td><ul><li><code>p2</code>: 4900</li></ul></td><td>100</td><td>Same reference and currency, different signed amounts.</td></tr><tr data-status="left_only"><th scope="row">payment-102</th><td>EUR</td><td>left only</td><td><ul><li><code>l4</code>: 3000</li></ul></td><td>—</td><td>3000</td><td>No record with this reference and currency in the right export.</td></tr><tr data-status="ambiguous"><th scope="row">payment-103</th><td>USD</td><td>ambiguous</td><td><ul><li><code>l5</code>: 8000</li></ul></td><td><ul><li><code>p4</code>: 4000</li><li><code>p5</code>: 4000</li></ul></td><td>0</td><td>Multiple records on a side; no automatic split or netting rule.</td></tr><tr data-status="right_only"><th scope="row">payment-104</th><td>EUR</td><td>right only</td><td>—</td><td><ul><li><code>p6</code>: 1500</li></ul></td><td>-1500</td><td>No record with this reference and currency in the left export.</td></tr><tr data-status="matched"><th scope="row">refund-100</th><td>USD</td><td>matched</td><td><ul><li><code>l3</code>: -2000</li></ul></td><td><ul><li><code>p3</code>: -2000</li></ul></td><td>0</td><td>One record on each side, with equal signed amounts.</td></tr></tbody></table></div>
+<p id="empty" hidden>No rows match the selected filters.</p>
+<noscript>Filters require JavaScript. All rows are visible without it.</noscript>
+<section><h2>Full-export totals (unaffected by filters)</h2><ul><li>EUR: left 3000, right 1500, delta 1500</li><li>USD: left 23000, right 22900, delta 100</li></ul></section>
+<section><h2>Input provenance</h2><dl><dt>left</dt><dd><code>3ea429caa4b2dda88c7e4e0c67734beda1404f004b5145677ab966008615dbbb</code> — 5 unique records; 1 exact duplicates ignored</dd><dt>right</dt><dd><code>24b7fcf0def4c94437b79309fff7e91b58e765e450b3207b0a4c1e3fc0e98fbe</code> — 6 unique records; 0 exact duplicates ignored</dd></dl>
+<p>SHA-256 identifies the bytes read by the importer.
+It does not authenticate their origin.</p>
+</section><script>
+const rows = Array.from(document.querySelectorAll('tbody tr'));
+const statusFilter = document.getElementById('status');
+const query = document.getElementById('query');
+function filterRows() {
+  const text = query.value.trim().toLowerCase();
+  let visible = 0;
+  for (const row of rows) {
+    const match = (statusFilter.value === 'all'
+      || row.dataset.status === statusFilter.value)
+      && row.textContent.toLowerCase().includes(text);
+    row.hidden = !match;
+    if (match) visible++;
+  }
+  document.getElementById('count').textContent =
+    `${visible} of ${rows.length} groups shown`;
+  document.getElementById('empty').hidden = visible !== 0;
+}
+statusFilter.addEventListener('change', filterRows);
+query.addEventListener('input', filterRows);
+filterRows();
+</script></body></html>

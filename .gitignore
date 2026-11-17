@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.ruff_cache/
+report.json
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
+demo-output/
+.DS_Store
+TASKS.md
+REQUESTS.md

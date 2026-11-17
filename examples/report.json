@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "policy": "exact reference + currency; unique one-to-one; signed integer minor units",
+  "counts": {
+    "ambiguous": 1,
+    "amount_mismatch": 1,
+    "left_only": 1,
+    "matched": 2,
+    "right_only": 1
+  },
+  "has_exceptions": true,
+  "totals_by_currency": {
+    "EUR": {
+      "left_minor": 3000,
+      "right_minor": 1500,
+      "delta_minor": 1500
+    },
+    "USD": {
+      "left_minor": 23000,
+      "right_minor": 22900,
+      "delta_minor": 100
+    }
+  },
+  "items": [
+    {
+      "reference": "payment-100",
+      "currency": "USD",
+      "status": "matched",
+      "left": [
+        {
+          "record_id": "l1",
+          "reference": "payment-100",
+          "currency": "USD",
+          "amount_minor": 12000
+        }
+      ],
+      "right": [
+        {
+          "record_id": "p1",
+          "reference": "payment-100",
+          "currency": "USD",
+          "amount_minor": 12000
+        }
+      ],
+      "delta_minor": 0
+    },
+    {
+      "reference": "payment-101",
+      "currency": "USD",
+      "status": "amount_mismatch",
+      "left": [
+        {
+          "record_id": "l2",
+          "reference": "payment-101",
+          "currency": "USD",
+          "amount_minor": 5000
+        }
+      ],
+      "right": [
+        {
+          "record_id": "p2",
+          "reference": "payment-101",
+          "currency": "USD",
+          "amount_minor": 4900
+        }
+      ],
+      "delta_minor": 100
+    },
+    {
+      "reference": "payment-102",
+      "currency": "EUR",
+      "status": "left_only",
+      "left": [
+        {
+          "record_id": "l4",
+          "reference": "payment-102",
+          "currency": "EUR",
+          "amount_minor": 3000
+        }
+      ],
+      "right": [],
+      "delta_minor": 3000
+    },
+    {
+      "reference": "payment-103",
+      "currency": "USD",
+      "status": "ambiguous",
+      "left": [
+        {
+          "record_id": "l5",
+          "reference": "payment-103",
+          "currency": "USD",
+          "amount_minor": 8000
+        }
+      ],
+      "right": [
+        {
+          "record_id": "p4",
+          "reference": "payment-103",
+          "currency": "USD",
+          "amount_minor": 4000
+        },
+        {
+          "record_id": "p5",
+          "reference": "payment-103",
+          "currency": "USD",
+          "amount_minor": 4000
+        }
+      ],
+      "delta_minor": 0
+    },
+    {
+      "reference": "payment-104",
+      "currency": "EUR",
+      "status": "right_only",
+      "left": [],
+      "right": [
+        {
+          "record_id": "p6",
+          "reference": "payment-104",
+          "currency": "EUR",
+          "amount_minor": 1500
+        }
+      ],
+      "delta_minor": -1500
+    },
+    {
+      "reference": "refund-100",
+      "currency": "USD",
+      "status": "matched",
+      "left": [
+        {
+          "record_id": "l3",
+          "reference": "refund-100",
+          "currency": "USD",
+          "amount_minor": -2000
+        }
+      ],
+      "right": [
+        {
+          "record_id": "p3",
+          "reference": "refund-100",
+          "currency": "USD",
+          "amount_minor": -2000
+        }
+      ],
+      "delta_minor": 0
+    }
+  ],
+  "inputs": {
+    "left": {
+      "sha256": "3ea429caa4b2dda88c7e4e0c67734beda1404f004b5145677ab966008615dbbb",
+      "unique_records": 5,
+      "exact_duplicates_ignored": 1
+    },
+    "right": {
+      "sha256": "24b7fcf0def4c94437b79309fff7e91b58e765e450b3207b0a4c1e3fc0e98fbe",
+      "unique_records": 6,
+      "exact_duplicates_ignored": 0
+    }
+  }
+}
