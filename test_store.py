@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from adapter import PROVIDER_FIELDS
-from store import current_records, import_batch
+from store import backup_store, current_records, event_history, import_batch
 
 
 class StoreTests(unittest.TestCase):
@@ -100,6 +100,39 @@ class StoreTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Not a supported"):
             import_batch(self.db, self.initial(), "s", "gross")
         self.assertEqual(self.db.read_bytes(), before)
+
+    def test_backup_restores_wal_data_and_all_streams(self):
+        original = self.initial()
+        import_batch(self.db, original, "s", "gross")
+        backup = self.root / "backup.sqlite"
+        with sqlite3.connect(self.db) as connection:
+            connection.execute("PRAGMA journal_mode=WAL")
+            changed = self.source("changed.csv", ["b,p,payment,,USD,120,5,115"])
+            import_batch(self.db, changed, "s", "gross", {"b": 1})
+            import_batch(self.db, original, "other", "net")
+            proof = backup_store(self.db, backup)
+            self.assertEqual(len(proof["sha256"]), 64)
+            self.assertEqual(
+                current_records(backup, "s"), current_records(self.db, "s")
+            )
+            self.assertEqual(current_records(backup, "other")[0]["amount_minor"], 95)
+            self.assertEqual(len(event_history(backup, "s", "b")), 2)
+        self.assertEqual(current_records(backup, "s")[0]["amount_minor"], 120)
+        before = backup.read_bytes()
+        with self.assertRaises(FileExistsError):
+            backup_store(self.db, backup)
+        self.assertEqual(backup.read_bytes(), before)
+
+    def test_backup_rejects_missing_or_unrelated_source_without_output(self):
+        backup = self.root / "backup.sqlite"
+        with self.assertRaises(sqlite3.OperationalError):
+            backup_store(self.db, backup)
+        self.assertFalse(self.db.exists())
+        with sqlite3.connect(self.db) as connection:
+            connection.execute("CREATE TABLE unrelated(value TEXT)")
+        with self.assertRaisesRegex(ValueError, "Not a supported"):
+            backup_store(self.db, backup)
+        self.assertFalse(backup.exists())
 
 
 if __name__ == "__main__":

@@ -2,8 +2,11 @@
 
 import argparse
 import csv
+import hashlib
 import json
+import os
 import sqlite3
+import tempfile
 from contextlib import closing
 from pathlib import Path
 
@@ -295,6 +298,30 @@ def import_history(db, stream):
     ]
 
 
+def backup_store(db, output):
+    """Create a checked, exclusive backup of all streams, including WAL data."""
+    output = Path(output)
+    uri = Path(db).resolve().as_uri() + "?mode=ro"
+    with closing(sqlite3.connect(uri, uri=True)) as source:
+        check_store(source)
+        with tempfile.TemporaryDirectory(dir=output.parent) as temporary:
+            snapshot = Path(temporary) / "snapshot.sqlite"
+            with closing(sqlite3.connect(snapshot)) as destination:
+                source.backup(destination)
+                check_store(destination)
+                if destination.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
+                    raise ValueError("Backup failed SQLite integrity check")
+                if destination.execute("PRAGMA foreign_key_check").fetchall():
+                    raise ValueError("Backup contains invalid batch references")
+            with snapshot.open("rb") as stream:
+                os.fsync(stream.fileno())
+                digest = hashlib.file_digest(stream, "sha256").hexdigest()
+            # A hard link publishes the completed file atomically and cannot
+            # replace an existing path. Both paths are on the same filesystem.
+            os.link(snapshot, output)
+    return {"sha256": digest, "scope": "All streams and stored revisions"}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -313,9 +340,14 @@ def main():
     for cmd in (load, export, check, history, batches):
         cmd.add_argument("--db", type=Path, required=True)
         cmd.add_argument("--stream", required=True)
+    backup = sub.add_parser("backup", help="Back up all streams and revisions")
+    backup.add_argument("--db", type=Path, required=True)
+    backup.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        if args.command == "import":
+        if args.command == "backup":
+            print(json.dumps(backup_store(args.db, args.output), indent=2))
+        elif args.command == "import":
             corrections = {}
             for spec in args.correct:
                 event_id, revision = spec.rsplit(":", 1)

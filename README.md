@@ -64,8 +64,8 @@ Python standard library.
 
 The HTML source, escaping and filter logic have automated checks. Visual browser
 review remains pending because the browser automation tool blocks local files.
-The prototype uses synthetic inputs. Real vendor adapters, operational backups,
-migration procedures and production accounting validation remain future work.
+The prototype uses synthetic inputs. Real vendor adapters, backup retention and recovery procedures,
+migrations and production accounting validation remain future work.
 
 ## Explicit normalization adapter
 
@@ -173,3 +173,20 @@ Run `python3 store.py batches --db demo.sqlite --stream provider` to list commit
 ## Export a historical snapshot
 
 Use `python3 store.py export --db demo.sqlite --stream provider --as-of-batch 1 --output before.csv` to export the latest revision of each event available through that batch. Choose an ID from the named stream’s `batches` output. Omit the flag for the current view. The command leaves SQLite unchanged and requires a new output file.
+
+## Back up the local store
+
+```sh
+python3 store.py backup --db demo-output/demo.sqlite --output snapshot.sqlite
+```
+
+The command uses SQLite Backup API to include committed WAL data and copies all
+streams, import batches and revisions. It checks the copy with SQLite quick_check
+and foreign_key_check, then publishes the completed file without replacing an
+existing output. JSON output includes the backup file SHA-256. The temporary copy
+requires space on the output filesystem, which must support hard links.
+Exit 2 indicates failure.
+
+To inspect a restored copy, pass snapshot.sqlite as --db to the read-only export,
+batches, history or check-refunds commands. Keep the backup in a protected
+location and define retention and recovery procedures before using real data.
