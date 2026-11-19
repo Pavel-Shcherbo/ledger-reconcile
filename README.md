@@ -185,6 +185,9 @@ streams, import batches and revisions. It checks the copy with SQLite quick_chec
 and foreign_key_check, then publishes the completed file without replacing an
 existing output. JSON output includes the backup file SHA-256. The temporary copy
 requires space on the output filesystem, which must support hard links.
+On POSIX systems the completed backup has mode 0600 (owner read/write),
+independent of the process umask. This does not encrypt the file or configure
+access controls on other platforms.
 Exit 2 indicates failure.
 
 To inspect a restored copy, pass snapshot.sqlite as --db to the read-only export,

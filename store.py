@@ -313,6 +313,8 @@ def backup_store(db, output):
                     raise ValueError("Backup failed SQLite integrity check")
                 if destination.execute("PRAGMA foreign_key_check").fetchall():
                     raise ValueError("Backup contains invalid batch references")
+            # Set access before publishing the same inode at the output path.
+            snapshot.chmod(0o600)
             with snapshot.open("rb") as stream:
                 os.fsync(stream.fileno())
                 digest = hashlib.file_digest(stream, "sha256").hexdigest()

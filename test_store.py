@@ -1,7 +1,10 @@
+import os
 import sqlite3
+import stat
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from adapter import PROVIDER_FIELDS
 from store import backup_store, current_records, event_history, import_batch
@@ -133,6 +136,29 @@ class StoreTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Not a supported"):
             backup_store(self.db, backup)
         self.assertFalse(backup.exists())
+
+    @unittest.skipUnless(os.name == "posix", "POSIX file permissions")
+    def test_backup_is_private_even_with_permissive_umask(self):
+        import_batch(self.db, self.initial(), "s", "gross")
+        backup = self.root / "backup.sqlite"
+        previous = os.umask(0o022)
+        try:
+            backup_store(self.db, backup)
+        finally:
+            os.umask(previous)
+        self.assertEqual(stat.S_IMODE(backup.stat().st_mode), 0o600)
+
+    def test_backup_publication_failure_cleans_temporary_copy(self):
+        import_batch(self.db, self.initial(), "s", "gross")
+        backup = self.root / "backup.sqlite"
+        before_files = set(self.root.iterdir())
+        before_source = self.db.read_bytes()
+        with patch("store.os.link", side_effect=OSError("Publication failed")):
+            with self.assertRaisesRegex(OSError, "Publication failed"):
+                backup_store(self.db, backup)
+        self.assertFalse(backup.exists())
+        self.assertEqual(set(self.root.iterdir()), before_files)
+        self.assertEqual(self.db.read_bytes(), before_source)
 
 
 if __name__ == "__main__":
