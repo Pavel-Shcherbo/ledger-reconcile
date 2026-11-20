@@ -62,6 +62,19 @@ Run `python3 -m unittest -v` for Python checks and
 Node.js is needed only for this additional check. Runtime commands use the
 Python standard library.
 
+`test_cli.py` runs the public commands as separate processes in a temporary
+directory. Its synthetic scenario checks an amount correction, a historical
+export, restored backup history and SHA-256, an expected reconciliation
+exception, HTML generation, and refusal to overwrite an existing backup.
+Run it alone with `python3 -m unittest test_cli -v`.
+
+The `Checks` GitHub Actions workflow runs the Python suite, Ruff E/F/I and Node
+filter controls on Ubuntu with Python 3.14 and Node 22 for pushes to main and
+pull requests. Actions are pinned to commit hashes and the job has read-only
+repository permissions. A green run covers these automated checks; it does not
+establish native browser accessibility, other operating systems or production
+recovery readiness.
+
 The HTML source, escaping and filter logic have automated checks. Visual browser
 review remains pending because the browser automation tool blocks local files.
 The prototype uses synthetic inputs. Real vendor adapters, backup retention and recovery procedures,
