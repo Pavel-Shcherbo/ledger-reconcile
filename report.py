@@ -18,9 +18,18 @@ def escape(value):
     return html.escape(str(value), quote=True)
 
 
+def require_object(value, name):
+    if not isinstance(value, dict):
+        raise ValueError(f"{name} must be a JSON object")
+    return value
+
+
 def render(report):
+    require_object(report, "Report")
     if report.get("schema_version") != 1:
         raise ValueError("Unsupported report schema")
+    input_proofs = require_object(report.get("inputs", {}), "Input provenance")
+    currency_totals = require_object(report["totals_by_currency"], "Currency totals")
     rows = []
     counts = {status: 0 for status in REASONS}
     for item in report["items"]:
@@ -57,12 +66,12 @@ def render(report):
         f"<dt>{escape(side)}</dt><dd><code>{escape(proof['sha256'])}</code>"
         f" — {escape(proof['unique_records'])} unique records; "
         f"{escape(proof['exact_duplicates_ignored'])} exact duplicates ignored</dd>"
-        for side, proof in report.get("inputs", {}).items()
+        for side, proof in input_proofs.items()
     )
     totals = "".join(
         f"<li>{escape(currency)}: left {escape(t['left_minor'])}, "
         f"right {escape(t['right_minor'])}, delta {escape(t['delta_minor'])}</li>"
-        for currency, t in report["totals_by_currency"].items()
+        for currency, t in currency_totals.items()
     )
     return (
         """<!doctype html>

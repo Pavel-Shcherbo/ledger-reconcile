@@ -20,6 +20,9 @@ Search covers the visible row text. Filters never change full-export totals.
 CSV values are escaped as text; no external assets or network requests are used.
 Existing HTML files are never overwritten. The generated demonstration is in
 `examples/report.html`; it contains only synthetic data.
+The renderer requires JSON objects for the report, input provenance and currency
+totals. Wrong container types exit with code 2 and a short error before an output
+file is created.
 
 Report tests cover the import-to-HTML pipeline and hostile text escaping. Node
 controls exercise the actual generated filtering script with a minimal DOM

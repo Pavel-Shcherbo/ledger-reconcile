@@ -1,4 +1,8 @@
 import copy
+import json
+import subprocess
+import sys
+import tempfile
 import unittest
 from html.parser import HTMLParser
 from pathlib import Path
@@ -70,6 +74,35 @@ class ReportTests(unittest.TestCase):
         parsed.feed(page)
         self.assertEqual(parsed.statuses, [])
         self.assertIn("No rows match", page)
+
+    def test_wrong_json_container_types_fail_without_output_or_traceback(self):
+        cases = [[], None, "report", 1]
+        for field in ("inputs", "totals_by_currency"):
+            data = copy.deepcopy(self.report)
+            data[field] = []
+            cases.append(data)
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / "report.json"
+            output = Path(folder) / "report.html"
+            for index, data in enumerate(cases):
+                with self.subTest(case=index):
+                    source.write_text(json.dumps(data), encoding="utf-8")
+                    result = subprocess.run(
+                        [
+                            sys.executable,
+                            str(Path(__file__).with_name("report.py")),
+                            str(source),
+                            "--output",
+                            str(output),
+                        ],
+                        capture_output=True,
+                        text=True,
+                        timeout=30,
+                    )
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+                    self.assertIn("must be a JSON object", result.stderr)
+                    self.assertFalse(output.exists())
 
 
 if __name__ == "__main__":
