@@ -160,6 +160,35 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(set(self.root.iterdir()), before_files)
         self.assertEqual(self.db.read_bytes(), before_source)
 
+    def test_restore_without_source_preserves_replay_and_correction_guards(self):
+        original = self.initial()
+        import_batch(self.db, original, "s", "gross")
+        changed = self.source("changed.csv", ["b,p,payment,,USD,120,5,115"])
+        import_batch(self.db, changed, "s", "gross", {"b": 1})
+        snapshot = self.root / "snapshot.sqlite"
+        backup_store(self.db, snapshot)
+        snapshot_bytes = snapshot.read_bytes()
+        self.db.unlink()
+
+        restored = self.root / "restored.sqlite"
+        backup_store(snapshot, restored)
+        replay = import_batch(restored, original, "s", "gross")
+        self.assertTrue(replay["replayed_batch"])
+        self.assertEqual(current_records(restored, "s")[0]["amount_minor"], 120)
+        further = self.source("further.csv", ["b,p,payment,,USD,130,5,125"])
+        before = event_history(restored, "s", "b")
+        with self.assertRaises(ValueError):
+            import_batch(restored, further, "s", "gross", {"b": 1})
+        self.assertEqual(event_history(restored, "s", "b"), before)
+        result = import_batch(restored, further, "s", "gross", {"b": 2})
+        self.assertEqual(result["batch_id"], 3)
+        self.assertEqual(current_records(restored, "s")[0]["amount_minor"], 130)
+        self.assertEqual(
+            [r["revision"] for r in event_history(restored, "s", "b")], [1, 2, 3]
+        )
+        self.assertEqual(snapshot.read_bytes(), snapshot_bytes)
+        self.assertFalse(self.db.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

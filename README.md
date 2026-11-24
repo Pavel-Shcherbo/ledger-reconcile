@@ -209,3 +209,18 @@ Exit 2 indicates failure.
 To inspect a restored copy, pass snapshot.sqlite as --db to the read-only export,
 batches, history or check-refunds commands. Keep the backup in a protected
 location and define retention and recovery procedures before using real data.
+
+For an isolated recovery exercise, create a new working database from a snapshot:
+
+```sh
+python3 store.py backup --db snapshot.sqlite --output restored.sqlite
+python3 store.py batches --db restored.sqlite --stream provider
+python3 store.py history evt1 --db restored.sqlite --stream provider
+```
+
+Use the stream and event IDs from your snapshot. Keep the original snapshot
+unchanged and run any subsequent imports against restored.sqlite. The recovery
+regression removes a temporary synthetic source database, creates a working copy,
+and checks that replay cannot revert a correction, stale revisions still fail,
+and an explicit next correction retains all three revisions. This bounded check
+does not establish recovery after arbitrary corruption or a host failure.
