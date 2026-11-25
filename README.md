@@ -36,6 +36,30 @@ Multiple records sharing a reference and currency are **ambiguous**, even if sum
 
 ## Run the correction demo
 
+### Export exceptions for manual review
+
+```sh
+python3 exceptions_csv.py examples/report.json --output exceptions.csv
+```
+
+The UTF-8 CSV has one row per non-matched group, including ambiguous groups.
+Record ID lists are JSON arrays inside CSV cells. Left/right sums and deltas use
+signed integer minor units, with currencies kept separate. The supplied example
+produces four rows; a report with no exceptions produces only the header.
+The exporter checks displayed integer amounts and deltas, but does not rerun
+matching or validate every aspect of the supplied report. Retain the original
+JSON for input hashes and full-export totals; the CSV is a review view, not a
+replacement for that evidence or an import format.
+
+Formula-like reference/currency text (leading `=`, `+`, `-`, `@`, including
+preceding whitespace, or an initial tab/newline) is prefixed with an apostrophe.
+This changes the display value; use the original JSON for exact identifiers.
+CSV quoting handles commas, quotes and newlines. Spreadsheet import behavior
+varies, so treat identifier columns as text and do not enable formulas from
+untrusted data. Existing output files are refused; invalid input exits 2.
+
+### Reproduce a correction
+
 From a fresh checkout, use a new output directory:
 
 ```sh
