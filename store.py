@@ -17,13 +17,14 @@ APPLICATION_ID = 0x4C524543
 
 
 def check_store(connection, allow_empty=False):
+    """Validate identity; return whether the store is already initialized."""
     app_id = connection.execute("PRAGMA application_id").fetchone()[0]
     version = connection.execute("PRAGMA user_version").fetchone()[0]
     if app_id == APPLICATION_ID and version == 1:
-        return
+        return True
     objects = connection.execute("SELECT name FROM sqlite_master").fetchall()
     if allow_empty and app_id == 0 and version == 0 and not objects:
-        return
+        return False
     raise ValueError("Not a supported Ledger Reconcile database")
 
 
@@ -57,11 +58,12 @@ def import_batch(db, source, stream, basis, corrections=None):
     if set(corrections) - {x["event_id"] for x in events}:
         raise ValueError("Correction requested for an event absent from this batch")
     with closing(sqlite3.connect(db)) as connection:
-        check_store(connection, allow_empty=True)
+        initialized = check_store(connection, allow_empty=True)
         connection.execute("PRAGMA foreign_keys = ON")
-        connection.executescript(SCHEMA)
-        connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
-        connection.execute("PRAGMA user_version = 1")
+        if not initialized:
+            connection.executescript(SCHEMA)
+            connection.execute(f"PRAGMA application_id = {APPLICATION_ID}")
+            connection.execute("PRAGMA user_version = 1")
         # Serialize validation and writes so expected revision is checked atomically.
         connection.execute("BEGIN IMMEDIATE")
         try:

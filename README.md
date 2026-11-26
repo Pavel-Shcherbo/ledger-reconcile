@@ -172,6 +172,10 @@ correction can change gross/fee/net amounts while preserving their arithmetic;
 reference, currency, payment/refund kind and refund parent must stay unchanged.
 Replaying an older already-imported batch cannot revert a correction. Failed
 batches roll back their revisions and batch journal entry in one transaction.
+Recognized stores are checked without rewriting schema identity/version metadata
+on every import. An isolated regression verifies unchanged database bytes after
+an exact replay and an invalid expected-revision request using SQLite's default
+journal mode; this is not a guarantee about concurrent processes or WAL files.
 
 `streams`, `batches` and `revisions` retain the basis, source hashes, timestamps,
 explicit correction requests and versioned payloads. This is an audit trail,

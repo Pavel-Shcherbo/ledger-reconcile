@@ -189,6 +189,21 @@ class StoreTests(unittest.TestCase):
         self.assertEqual(snapshot.read_bytes(), snapshot_bytes)
         self.assertFalse(self.db.exists())
 
+    def test_replay_and_stale_correction_do_not_rewrite_existing_database(self):
+        original = self.initial()
+        import_batch(self.db, original, "s", "gross")
+        changed = self.source("changed.csv", ["b,p,payment,,USD,120,5,115"])
+        for action in ("replay", "stale"):
+            with self.subTest(action=action):
+                before = self.db.read_bytes()
+                if action == "replay":
+                    result = import_batch(self.db, original, "s", "gross")
+                    self.assertTrue(result["replayed_batch"])
+                else:
+                    with self.assertRaises(ValueError):
+                        import_batch(self.db, changed, "s", "gross", {"b": 2})
+                self.assertEqual(self.db.read_bytes(), before)
+
 
 if __name__ == "__main__":
     unittest.main()
