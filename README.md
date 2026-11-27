@@ -43,6 +43,11 @@ python3 exceptions_csv.py examples/report.json --output exceptions.csv
 ```
 
 The UTF-8 CSV has one row per non-matched group, including ambiguous groups.
+Before excluding matched groups, the exporter checks every group's status against
+its record counts and integer amounts using the same rule as reconciliation.
+Inconsistent statuses, invalid amounts/deltas and empty groups exit with code 2
+before creating the CSV. This checks group consistency, not the complete report
+schema or the original source files.
 Record ID lists are JSON arrays inside CSV cells. Left/right sums and deltas use
 signed integer minor units, with currencies kept separate. The supplied example
 produces four rows; a report with no exceptions produces only the header.

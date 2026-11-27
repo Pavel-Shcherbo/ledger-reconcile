@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 
+from reconcile import group_status
 from report import REASONS, require_object
 
 FIELDS = (
@@ -43,7 +44,11 @@ def records_summary(records):
             raise ValueError("Amounts must be integer minor units")
         ids.append(record["record_id"])
         total += record["amount_minor"]
-    return json.dumps(ids, ensure_ascii=False), total
+    return (
+        json.dumps(ids, ensure_ascii=False),
+        total,
+        [r["amount_minor"] for r in records],
+    )
 
 
 def render_csv(report):
@@ -60,16 +65,20 @@ def render_csv(report):
         status = item["status"]
         if not isinstance(status, str) or status not in REASONS:
             raise ValueError("Unknown reconciliation status")
-        if status == "matched":
-            continue
-        left_ids, left = records_summary(item["left"])
-        right_ids, right = records_summary(item["right"])
+        left_ids, left, left_amounts = records_summary(item["left"])
+        right_ids, right, right_amounts = records_summary(item["right"])
+        if status != group_status(left_amounts, right_amounts):
+            raise ValueError("Status does not match record amounts and cardinality")
         if type(item["delta_minor"]) is not int or item["delta_minor"] != left - right:
             raise ValueError("Delta does not match record amounts")
+        reference = text_cell(item["reference"])
+        currency = text_cell(item["currency"])
+        if status == "matched":
+            continue
         writer.writerow(
             (
-                text_cell(item["reference"]),
-                text_cell(item["currency"]),
+                reference,
+                currency,
                 status,
                 left_ids,
                 right_ids,

@@ -79,6 +79,47 @@ class ExceptionsCSVTests(unittest.TestCase):
             [list(FIELDS)],
         )
 
+    def test_inconsistent_statuses_are_rejected_before_output(self):
+        for status in ("matched", "left_only", "right_only", "ambiguous"):
+            with self.subTest(status=status):
+                data = copy.deepcopy(self.report)
+                item = next(
+                    i for i in data["items"] if i["status"] == "amount_mismatch"
+                )
+                item["status"] = status
+                with tempfile.TemporaryDirectory() as folder:
+                    source = Path(folder) / "report.json"
+                    output = Path(folder) / "exceptions.csv"
+                    source.write_text(json.dumps(data), encoding="utf-8")
+                    result = subprocess.run(
+                        [
+                            sys.executable,
+                            str(Path(__file__).with_name("exceptions_csv.py")),
+                            str(source),
+                            "--output",
+                            str(output),
+                        ],
+                        capture_output=True,
+                        timeout=30,
+                    )
+                    self.assertEqual(result.returncode, 2)
+                    self.assertNotIn(b"Traceback", result.stderr)
+                    self.assertFalse(output.exists())
+
+    def test_matched_groups_and_empty_groups_are_validated(self):
+        for mutation in ("bool_amount", "wrong_delta", "empty_group"):
+            with self.subTest(mutation=mutation):
+                data = copy.deepcopy(self.report)
+                item = next(i for i in data["items"] if i["status"] == "matched")
+                if mutation == "bool_amount":
+                    item["left"][0]["amount_minor"] = True
+                elif mutation == "wrong_delta":
+                    item["delta_minor"] = 123
+                else:
+                    item["left"] = item["right"] = []
+                with self.assertRaises(ValueError):
+                    render_csv(data)
+
     def test_cli_refuses_overwrite_and_does_not_change_input(self):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)

@@ -65,6 +65,19 @@ def load_export(path: Path) -> tuple[list[Record], dict]:
     }
 
 
+def group_status(left: list[int], right: list[int]) -> str:
+    """Classify a nonempty group without guessing split-settlement matches."""
+    if not left and not right:
+        raise ValueError("A reconciliation group must contain records")
+    if len(left) > 1 or len(right) > 1:
+        return "ambiguous"
+    if not left:
+        return "right_only"
+    if not right:
+        return "left_only"
+    return "matched" if left[0] == right[0] else "amount_mismatch"
+
+
 def reconcile(left: list[Record], right: list[Record]) -> dict:
     groups = [defaultdict(list), defaultdict(list)]
     totals = [defaultdict(int), defaultdict(int)]
@@ -77,17 +90,10 @@ def reconcile(left: list[Record], right: list[Record]) -> dict:
     for reference, currency in sorted(groups[0].keys() | groups[1].keys()):
         a = sorted(groups[0][reference, currency], key=lambda x: x.record_id)
         b = sorted(groups[1][reference, currency], key=lambda x: x.record_id)
-        # Multiple records may be installments or split settlements. Do not guess.
-        if len(a) > 1 or len(b) > 1:
-            status = "ambiguous"
-        elif not a:
-            status = "right_only"
-        elif not b:
-            status = "left_only"
-        elif a[0].amount_minor != b[0].amount_minor:
-            status = "amount_mismatch"
-        else:
-            status = "matched"
+        status = group_status(
+            [record.amount_minor for record in a],
+            [record.amount_minor for record in b],
+        )
         counts[status] += 1
         items.append(
             {
